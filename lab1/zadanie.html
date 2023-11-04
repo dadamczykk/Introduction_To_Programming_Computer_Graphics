@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+ <!-- It's the HTML5 standard. -->
+ 
+ <html>
+     <head>
+         <title>Adamczyk Dominik - zad 1</title>
+         <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+         <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+         <style type="text/css">
+             body {
+                 background-color: #000000;
+ 
+                 overflow: hidden;
+             }
+         </style>
+         <script src="three.js"></script>
+     </head>
+     <body>
+         <div id="WebGLCanvas"> </div>
+        <script>
+            class Tree {
+                constructor(numSegments, baseSize) {
+                    this.group = new THREE.Group();
+                    this.createFoliage(numSegments, baseSize);
+                    this.createTrunk(baseSize)
+                    this.zSign = 1;
+                    this.xSign = 1;
+                }
+
+                createFoliage(numSegments, baseSize) {
+                    
+                    for (let i = 0; i < numSegments; i++) {
+                        const triangleSize = baseSize
+                        const triangleHeight = triangleSize * Math.sqrt(3) / 2;
+                        const x = 0;
+                        const y = i * triangleHeight;
+                        const z = 0;
+                        const triangleGeometry = new THREE.Geometry();
+                        triangleGeometry.vertices.push(
+                            new THREE.Vector3(-triangleSize / 2, 0, 0),
+                            new THREE.Vector3(triangleSize / 2, 0, 0),
+                            new THREE.Vector3(0, triangleHeight, 0),
+                        );
+                        triangleGeometry.faces.push(new THREE.Face3(0, 1, 2));
+
+                        const darkeningFactor = i / numSegments;
+                        const triangleColor = new THREE.Color(0x005500).lerp(new THREE.Color(0x00FF00), darkeningFactor);
+
+                        const triangleMaterial = new THREE.MeshBasicMaterial({color: triangleColor,
+                                                                            side:THREE.DoubleSide});
+                        const triangleMesh  = new THREE.Mesh(triangleGeometry, triangleMaterial)
+                        const triangleMesh2 = new THREE.Mesh(triangleGeometry, triangleMaterial)
+                        triangleMesh2.rotation.y += Math.PI / 2
+                        triangleMesh.position.set(x, 0.6*y, z);
+                        triangleMesh2.position.set(x, 0.6*y, z);
+                        this.group.add(triangleMesh);
+                        this.group.add(triangleMesh2)
+                        baseSize = baseSize * 0.9
+                    }
+                }
+
+                createTrunk(baseSize){
+                    var squareGeometry = new THREE.Geometry();
+                    squareGeometry.vertices.push(new THREE.Vector3(-baseSize / 4,  0, 0.0));
+                    squareGeometry.vertices.push(new THREE.Vector3( baseSize / 4,  0, 0.0));
+                    squareGeometry.vertices.push(new THREE.Vector3( baseSize / 4, -baseSize / 2, 0.0));
+                    squareGeometry.vertices.push(new THREE.Vector3(-baseSize / 4, -baseSize / 2, 0.0));
+                    squareGeometry.faces.push(new THREE.Face3(0, 1, 2));
+                    squareGeometry.faces.push(new THREE.Face3(0, 2, 3));
+    
+                    var squareMaterial = new THREE.MeshBasicMaterial({
+                        color:0x6F4E37,
+                        side:THREE.DoubleSide
+                    });
+
+                    const trunk1 = new THREE.Mesh(squareGeometry, squareMaterial);
+                    const trunk2 = new THREE.Mesh(squareGeometry, squareMaterial);
+                    trunk2.rotation.y += Math.PI / 2;
+                    this.group.add(trunk1);
+                    this.group.add(trunk2);
+                }
+
+                rotate(x=0, y=0, z=0){
+                    this.group.rotation.x += x;
+                    this.group.rotation.y += y;
+                    this.group.rotation.z += z;
+                    
+                }
+
+                animate(ratio){
+                    this.group.rotation.y += 1 * ratio;
+                    if (Math.abs(this.group.rotation.z) > Math.PI / 18){
+                        this.zSign *= -1;
+                    } 
+                    this.group.rotation.z += 1 * ratio * this.zSign;
+                    if (Math.abs(this.group.rotation.x) > Math.PI / 18){
+                        this.xSign *= -1;
+                    } 
+                    this.group.rotation.x += 1 * ratio * this.xSign;
+                }
+
+                setPosition(x=0, y=0, z=0){
+                    this.group.position.set(x, y, z);
+                }
+            }
+
+            class ConeTree {
+
+                constructor(numSegments, baseSize) {
+                    this.group = new THREE.Group();
+                    this.zSign = 1;
+                    this.xSign = 1;
+                    this.createFoliage(numSegments, baseSize);
+                    this.createTrunk(baseSize);
+                    
+                }
+
+                createFoliage(numSegments, baseSize) {
+                    
+                    for (let i = 0; i < numSegments; i++) {
+                        const radius = baseSize / 2 
+                        const height = radius * Math.sqrt(3);
+                        const x = 0;
+                        const y = i * height;
+                        const z = 0;
+                        const segment = new THREE.ConeGeometry(radius, height, 32);
+
+                        const darkeningFactor = i / numSegments;
+                        const coneColor = new THREE.Color(0x005500).lerp(new THREE.Color(0x00FF00), darkeningFactor);
+                        const coneMaterial = new THREE.MeshBasicMaterial({color: coneColor,
+                                                                            side:THREE.DoubleSide});
+
+                        const coneMesh  = new THREE.Mesh(segment, coneMaterial);
+                        const coneMesh2 = new THREE.Mesh(segment, coneMaterial);
+                        coneMesh2.rotation.y += Math.PI / 2;
+                        coneMesh.position.set(x, 0.6*y, z);
+                        coneMesh2.position.set(x, 0.6*y, z);
+                        this.group.add(coneMesh);
+                        this.group.add(coneMesh2)
+                        baseSize = baseSize * 0.9
+                    }
+                }
+                
+                createTrunk(baseSize){
+                    var trunkGeometry = new THREE.CylinderGeometry(baseSize / 6, baseSize / 6, baseSize / 2, 7);
+
+                    var trunkMaterial = new THREE.MeshBasicMaterial({
+                        color:0x6F4E37,
+                        side:THREE.DoubleSide
+                    });
+                    
+                    const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+                    trunk.position.y -= 0.7
+                    this.group.add(trunk);
+                }
+
+                rotate(x=0, y=0, z=0){
+                    this.group.rotation.x += x;
+                    this.group.rotation.y += y;
+                    this.group.rotation.z += z;
+                    
+                }
+
+                animate(ratio){
+                    this.group.rotation.y += 1 * ratio;
+                    if (Math.abs(this.group.rotation.z) > Math.PI / 18){
+                        this.zSign *= -1;
+                    } 
+                    this.group.rotation.z += 1 * ratio * this.zSign;
+                    if (Math.abs(this.group.rotation.x) > Math.PI / 18){
+                        this.xSign *= -1;
+                    } 
+                    this.group.rotation.x += 1 * ratio * this.xSign;
+                }
+
+                setPosition(x=0, y=0, z=0){
+                    this.group.position.set(x, y, z);
+                }
+            }
+            
+            var car;
+            var tree;
+            var coneTree;
+            var scene;
+            var camera;
+            initializeScene();
+            // renderScene();
+            animateScene();
+            var canvasWidth;
+
+            function initializeScene(){
+                
+                renderer = new THREE.WebGLRenderer({antialias:true});
+                 
+                renderer.setClearColor(0x000000, 1);
+ 
+                canvasWidth = window.innerWidth;
+                canvasHeight = window.innerHeight;
+ 
+                renderer.setSize(canvasWidth, canvasHeight);
+ 
+                document.getElementById("WebGLCanvas").appendChild(renderer.domElement);
+ 
+                scene = new THREE.Scene();
+ 
+                camera = new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 1, 100);
+                camera.position.set(0, 0, 10);
+                camera.lookAt(scene.position);
+                scene.add(camera);
+
+                tree = new Tree(5, 1)
+                tree.setPosition(-3, -1, 0);
+                scene.add(tree.group);
+
+                coneTree = new ConeTree(5, 1);
+                coneTree.setPosition(-1.5, -0.5, 0);
+                scene.add(coneTree.group);
+
+                var squareGeometry = new THREE.Geometry();
+                squareGeometry.vertices.push(new THREE.Vector3(-0,  0, 0.0));
+                squareGeometry.vertices.push(new THREE.Vector3( 2,  0, 0.0));
+                squareGeometry.vertices.push(new THREE.Vector3( 2, -2, 0.0));
+                squareGeometry.vertices.push(new THREE.Vector3(-0, -2, 0.0));
+                squareGeometry.faces.push(new THREE.Face3(0, 1, 2));
+                squareGeometry.faces.push(new THREE.Face3(0, 2, 3));
+    
+                var houseMaterial = new THREE.MeshBasicMaterial({
+                    color:0x7fcdff,
+                    side:THREE.DoubleSide
+                });
+
+                var house = new THREE.Group();
+                
+
+                const houseFasade = new THREE.Mesh(squareGeometry, houseMaterial);
+                house.add(houseFasade)
+
+                var triangleGeometry = new THREE.Geometry();
+                triangleGeometry.vertices.push(
+                            new THREE.Vector3(-0.1, -0.1, 0),
+                            new THREE.Vector3(2.1, -0.1, 0),
+                            new THREE.Vector3(1, 1.5, 0),
+                        );
+                triangleGeometry.faces.push(new THREE.Face3(0, 1, 2));
+                var roofMaterial = new THREE.MeshBasicMaterial({
+                    color:0xFF0000,
+                    side:THREE.DoubleSide
+                });
+                const roof = new THREE.Mesh(triangleGeometry, roofMaterial);
+                house.add(roof);
+
+                var squareGeometry = new THREE.Geometry();
+                squareGeometry.vertices.push(new THREE.Vector3(0.1,  -1.3, 0.0));
+                squareGeometry.vertices.push(new THREE.Vector3( 0.5,  -1.3, 0.0));
+                squareGeometry.vertices.push(new THREE.Vector3( 0.5, -2, 0.0));
+                squareGeometry.vertices.push(new THREE.Vector3(0.1, -2, 0.0));
+                squareGeometry.faces.push(new THREE.Face3(0, 1, 2));
+                squareGeometry.faces.push(new THREE.Face3(0, 2, 3));
+    
+                var doorMaterial = new THREE.MeshBasicMaterial({
+                    color:0x8B4513,
+                    side:THREE.DoubleSide
+                });
+
+                const door = new THREE.Mesh(squareGeometry, doorMaterial);
+
+                house.add(door)
+                house.position.y += 0.7
+                house.position.z += 1.5
+
+                scene.add(house)
+
+                car = new THREE.Group();
+
+                var squareGeometry = new THREE.Geometry();
+                squareGeometry.vertices.push(new THREE.Vector3(3,  -1, 1.6));
+                squareGeometry.vertices.push(new THREE.Vector3( 5,  -1, 1.6));
+                squareGeometry.vertices.push(new THREE.Vector3( 5, -2, 1.6));
+                squareGeometry.vertices.push(new THREE.Vector3(3, -2, 1.6));
+                squareGeometry.faces.push(new THREE.Face3(0, 1, 2));
+                squareGeometry.faces.push(new THREE.Face3(0, 2, 3));
+                
+                var carMaterial = new THREE.MeshBasicMaterial({
+                    color:0xfc660f,
+                    side:THREE.DoubleSide
+                });
+
+                const carMain = new THREE.Mesh(squareGeometry, carMaterial);
+                car.add(carMain)
+
+                const geometry = new THREE.CircleGeometry( 0.3, 32 ); 
+                const material = new THREE.MeshBasicMaterial( { color: 0x666666 } ); 
+                const tire1 = new THREE.Mesh( geometry, material );
+                tire1.position.set(3.4, -2, 1.6)
+                car.add(tire1)
+
+                const tire2 = new THREE.Mesh( geometry, material );
+                tire2.position.set(4.6, -2, 1.6)
+                car.add(tire2)
+
+                scene.add(car)
+            }
+
+
+ 
+            function renderScene(){
+                renderer.render(scene, camera);
+            }
+
+            function animateScene(){
+                tree.animate(0.01)
+                coneTree.animate(0.01);
+                car.position.x -= 0.15;
+                if (car.position.x < -canvasWidth / 100 ){
+                    car.position.x = canvasWidth / 300;
+                }
+
+                requestAnimationFrame(animateScene);
+                renderScene();
+            }
+         </script>
+     </body>
+</html>

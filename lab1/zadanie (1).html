@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<!-- The previous line tells the browser, that the page uses the HTML5 standard. -->
+
+<html>
+
+<head>
+    <title>Zadanie - Rotation</title>
+    <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+
+    <!-- The following meta line optimizes the site for mobile devices. It sets the viewport size
+       to the screen size, so it will be displayed maximized, but unscaled. -->
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+    <style type="text/css">
+        body {
+            /* Set the background color of the HTML page to black */
+            background-color: #000000;
+
+            /* Hide oversized content. This prevents the scroll bars. */
+            overflow: hidden;
+        }
+    </style>
+    <!-- Include two libraries
+       1. Three.js (core library)
+       2. Detector.js (checks the browsers WebGL capabilities) -->
+    <script src="three.js"></script>
+    <script src="Detector.js"></script>
+</head>
+
+<body>
+    <!-- This is the DIV element which will contain the WebGL canvas. To be identifiable lateron,
+              the id 'WebGLCanvas' is applied to it. -->
+    <div id="WebGLCanvas"> </div>
+
+    <!-- This JavaScript block encloses the Three.js commands -->
+    <script>
+        class Point {
+            constructor(x, y, z) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+            }
+        }
+        class Tree {
+            constructor(scene, trunkPos) {
+                this.scene = scene
+
+                this.trunk = makeSquare(new Point(trunkPos.x, trunkPos.y, trunkPos.z), new Point(trunkPos.x,
+                        trunkPos.y + 0.75, trunkPos.z),
+                    new Point(trunkPos.x + 0.25, trunkPos.y + 0.75, trunkPos.z), new Point(trunkPos.x + 0.25,
+                        trunkPos.y, trunkPos.z), "#834E16")
+                        this.trunk.translateX(-2.63)
+                        this.trunk.translateY(-1.5)
+
+                this.triangles = []
+                for (let i = 0; i < 10; i++) {
+                    triangleMesh = makeTriangle(new Point(trunkPos.x + 0.5, trunkPos.y + 0.5, trunkPos.z),
+                        new Point(trunkPos.x + 1 - i * 0.05, trunkPos.y, trunkPos.z), new Point(trunkPos.x + 0 +
+                            i * 0.05, trunkPos.y, trunkPos.z), rgbToHex(0, 200 - 15 * i, 0))
+                    triangleMesh.translateY(0.2 * i)
+                    this.triangles.push(triangleMesh)
+                }
+                this.triangles.forEach(triangle => {
+                    triangle.translateY(-1)
+                });
+
+                
+
+
+
+
+            }
+            add_to_scene() {
+                this.scene.add(this.trunk)
+                this.scene
+                this.triangles.forEach(triangle => {
+                    this.scene.add(triangle)
+                });
+            }
+            rotate_trunk(angle=0.01){
+                this.a = 0.25
+                this.trunk.translateX(this.a/2)
+                this.trunk.rotation.y += angle
+                this.trunk.translateX(-this.a/2)
+            }
+            rotate_tri(angle=0.01){
+                this.a = 0.5
+                this.triangles.forEach(triangle => {
+                    triangle.translateX(this.a)
+                    triangle.rotation.y += angle
+                    triangle.translateX(-this.a)
+                });
+            }
+            rotate(angle){
+                this.rotate_trunk(angle)
+                this.rotate_tri(angle)
+            }
+        }
+        class TreeCone {
+            constructor(scene, trunkPos) {
+                this.scene = scene
+
+                this.trunk = makeSquare(new Point(trunkPos.x, trunkPos.y, trunkPos.z), new Point(trunkPos.x,
+                        trunkPos.y + 0.75, trunkPos.z),
+                    new Point(trunkPos.x + 0.25, trunkPos.y + 0.75, trunkPos.z), new Point(trunkPos.x + 0.25,
+                        trunkPos.y, trunkPos.z), "#834E16")
+                        this.trunk.translateX(-2.63)
+                        this.trunk.translateY(-1.5)
+
+                this.cones = []
+                for (let i = 0; i < 10; i++) {
+                    var coneMesh = makeCone(new Point(trunkPos.x-0.9, trunkPos.y, trunkPos.z+3.75), 1 - i * 0.05,0.5, rgbToHex(0, 200 - 15 * i, 0))
+                    coneMesh.translateY(0.2 * i)
+                    this.cones.push(coneMesh)
+                }
+                this.cones.forEach(cone => {
+                    cone.translateY(-0.5)
+                });
+
+            }
+            add_to_scene() {
+                this.scene.add(this.trunk)
+                this.cones.forEach(cone => {
+                    this.scene.add(cone)
+                });
+            }
+        }
+        class Car {
+            constructor(scene, pos){
+                this.scene = scene
+                this.pos = 2
+                this.h = 1
+                this.w = 2
+                this.body = makeSquare(new Point(pos.x, pos.y, pos.z), new Point(pos.x,
+                pos.y + this.h, pos.z),
+                    new Point(pos.x + this.w , pos.y + this.h, pos.z), new Point(pos.x + this.w,
+                    pos.y, pos.z), "#FFFF16")
+
+                this.body.translateX(-2.5)
+                this.body.translateY(-1.5)
+
+                this.wheel_1 = makeCircle(new Point(pos.x-1, pos.y-1.75, 0),0.25, "#FF0000")
+
+                this.wheel_2 = makeCircle(new Point(pos.x+1, pos.y-1.75, 0),0.25, "#FF0000")
+                // this.body.translateX(this.pos)
+                // this.wheel_1.translateX(this.pos)
+                // this.wheel_2.translateX(this.pos)
+            }
+            add_to_scene() {
+                this.scene.add(this.body)
+                this.scene.add(this.wheel_1)
+                this.scene.add(this.wheel_2)
+            }
+            move(dist = 0.05){
+                this.to_travel = 10
+                this.pos -= dist
+                this.body.translateX(-dist)
+                this.wheel_1.translateX(-dist)
+                this.wheel_2.translateX(-dist)
+                if (this.pos < -this.to_travel/2){
+                    this.body.translateX(this.to_travel)
+                    this.wheel_1.translateX(this.to_travel)
+                    this.wheel_2.translateX(this.to_travel)
+                    this.pos = this.to_travel/2
+                }
+
+
+            }
+        }
+        // Global scene object
+        var scene;
+
+        // Global camera object
+        var camera;
+
+        // Global mesh object of the triangle
+        var triangleMesh;
+
+        // Global mesh object of the square
+        var squareMesh;
+
+        // Initialize the scene
+        initializeScene();
+
+        // Instead of calling 'renderScene()', we call a new function: 'animateScene()'. It will
+        // update the rotation values and call 'renderScene()' in a loop.
+
+        // Animate the scene
+        animateScene();
+
+        /**
+         * Initialze the scene.
+         */
+
+        function makeTriangle(p1, p2, p3, color) {
+            var triangleGeometry = new THREE.Geometry();
+
+            triangleGeometry.vertices.push(new THREE.Vector3(p1.x, p1.y, p1.z));
+            triangleGeometry.vertices.push(new THREE.Vector3(p2.x, p2.y, p2.z));
+            triangleGeometry.vertices.push(new THREE.Vector3(p3.x, p3.y, p3.z));
+            triangleGeometry.faces.push(new THREE.Face3(0, 1, 2));
+
+
+            triangleGeometry.faces[0].vertexColors[0] = new THREE.Color(color);
+            triangleGeometry.faces[0].vertexColors[1] = new THREE.Color(color);
+            triangleGeometry.faces[0].vertexColors[2] = new THREE.Color(color);
+
+
+            var triangleMaterial = new THREE.MeshBasicMaterial({
+                vertexColors: THREE.VertexColors,
+                side: THREE.DoubleSide
+            });
+            triangleMesh = new THREE.Mesh(triangleGeometry, triangleMaterial);
+            triangleMesh.position.set(-1.5, 0.0, 4.0);
+            return triangleMesh
+        }
+        
+
+        function makeCone(p1, r, h, color) {
+            var coneGeometry = new THREE.ConeGeometry(r, h, 32);
+
+            var coneMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color(color) });
+
+            // Create a mesh using the geometry and material
+            var coneMesh = new THREE.Mesh(coneGeometry, coneMaterial);
+
+            // Set the position of the cone
+            coneMesh.position.copy(new THREE.Vector3(p1.x, p1.y, p1.z));
+
+            return coneMesh;
+        }
+
+
+        function makeSquare(p1, p2, p3, p4, color) {
+            var squareGeometry = new THREE.Geometry();
+            squareGeometry.vertices.push(new THREE.Vector3(p1.x, p1.y, p1.z));
+            squareGeometry.vertices.push(new THREE.Vector3(p2.x, p2.y, p2.z));
+            squareGeometry.vertices.push(new THREE.Vector3(p3.x, p3.y, p3.z));
+            squareGeometry.vertices.push(new THREE.Vector3(p4.x, p4.y, p4.z));
+            squareGeometry.faces.push(new THREE.Face3(0, 1, 2));
+            squareGeometry.faces.push(new THREE.Face3(0, 2, 3));
+            var squareMaterial = new THREE.MeshBasicMaterial({
+                color: color,
+                side: THREE.DoubleSide
+            });
+
+            squareMesh = new THREE.Mesh(squareGeometry, squareMaterial);
+            squareMesh.position.set(1.5, 0.0, 4.0);
+            return squareMesh
+        }
+
+        function makeCircle(posC, r, color){
+            geometry = new THREE.CircleGeometry( r, 32 ); 
+            material = new THREE.MeshBasicMaterial( { color: color } ); 
+            circle = new THREE.Mesh( geometry, material )
+            circle.translateX(posC.x)
+            circle.translateY(posC.y)
+            // circle.translateZ(posC.z)
+            return circle
+        }
+
+        function componentToHex(c) {
+            var hex = c.toString(16);
+            return hex.length == 1 ? "0" + hex : hex;
+        }
+
+        function rgbToHex(r, g, b) {
+            return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+        }
+
+
+        function makeHouse(scene, bodyPos) {
+            houseBody = makeSquare(new Point(bodyPos.x, bodyPos.y, bodyPos.z), new Point(bodyPos.x, bodyPos.y + 1,
+                bodyPos.z), new Point(bodyPos.x + 1, bodyPos.y + 1, bodyPos.z), new Point(bodyPos.x + 1, bodyPos
+                .y, bodyPos.z), "#cc7400")
+            houseBody.translateX(-1)
+            houseBody.translateY(-1)
+            scene.add(houseBody);
+
+            houseChim = makeSquare(new Point(bodyPos.x, bodyPos.y, bodyPos.z), new Point(bodyPos.x, bodyPos.y + 0.75,
+                bodyPos.z), new Point(bodyPos.x + 0.25, bodyPos.y + 0.75, bodyPos.z), new Point(bodyPos.x +
+                0.25, bodyPos.y, bodyPos.z), "#aa7400")
+            houseChim.translateX(-0.25)
+            houseChim.translateZ(-0.01)
+            scene.add(houseChim)
+
+            houseROOOF = makeTriangle(new Point(bodyPos.x + 0.5, bodyPos.y + 1.1, bodyPos.z), new Point(bodyPos.x + 1,
+                bodyPos.y, bodyPos.z), new Point(bodyPos.x, bodyPos.y, bodyPos.z), rgbToHex(0, 100, 100))
+            houseROOOF.translateX(2)
+            scene.add(houseROOOF)
+        }
+
+        function initializeScene() {
+            if (Detector.webgl) {
+                renderer = new THREE.WebGLRenderer({
+                    antialias: true
+                });
+
+            } else {
+                renderer = new THREE.CanvasRenderer();
+            }
+
+            renderer.setClearColor(0x000000, 1);
+
+            canvasWidth = window.innerWidth;
+            canvasHeight = window.innerHeight;
+
+            renderer.setSize(canvasWidth, canvasHeight);
+
+            document.getElementById("WebGLCanvas").appendChild(renderer.domElement);
+
+            scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 1, 100);
+            camera.position.set(0, 0, 10);
+            camera.lookAt(scene.position);
+            scene.add(camera);
+
+            tree_1 = new Tree(scene, new Point(0, 0, 0));
+            tree_1.add_to_scene()
+
+            tree_2 = new Tree(scene, new Point(0, 0, 0));
+            tree_2.add_to_scene()
+            tree_2.rotate(3.1415/2)
+
+            tree_3 = new TreeCone(scene, new Point(3, 0, 0));
+            tree_3.add_to_scene()
+
+
+
+
+
+            makeHouse(scene, new Point(-0.9, -0.5, 0))
+
+            car = new Car(scene, new Point(3, -0.5, -4))
+            car.add_to_scene()
+
+
+
+
+
+
+
+
+        }
+
+        /**
+         * Animate the scene and call rendering.
+         */
+        function animateScene() {
+            tree_1.rotate_trunk()
+            tree_1.rotate_tri()
+            tree_2.rotate_trunk()
+            tree_2.rotate_tri()
+            car.move()
+
+            requestAnimationFrame(animateScene);
+
+            // Map the 3D scene down to the 2D screen (render the frame)
+            renderScene();
+        }
+
+        /**
+         * Render the scene. Map the 3D world to the 2D screen.
+         */
+        function renderScene() {
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+
+</html>

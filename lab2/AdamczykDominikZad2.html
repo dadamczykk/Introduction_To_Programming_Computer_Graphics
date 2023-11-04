@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>Lab 02.01 - Ambient and SpotLight</title>
+    <script type="text/javascript" src="three.js"></script>
+    <script type="text/javascript" src="jquery-1.9.0.js"></script>
+    <script type="text/javascript" src="stats.js"></script>
+    <script type="text/javascript" src="dat.gui.js"></script>
+	<script type="text/javascript" src="OrbitControls.js"></script>
+    <style>
+        body {
+            /* set margin to 0 and overflow to hidden, to go fullscreen */
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<div id="Stats-output">
+</div>
+<!-- Div which will hold the Output -->
+<div id="WebGL-output">
+</div>
+
+<!-- Javascript code that runs our Three.js examples -->
+<script type="text/javascript">
+
+        class ConeTree {
+
+        constructor(numSegments, baseSize) {
+            this.group = new THREE.Group();
+            this.zSign = 1;
+            this.xSign = 1;
+            this.up = 1;
+            this.side = 1;
+            this.createFoliage(numSegments, baseSize);
+            this.createTrunk(baseSize);
+            
+        }
+
+        createFoliage(numSegments, baseSize) {
+            
+            for (let i = 0; i < numSegments; i++) {
+                const radius = baseSize / 2 
+                const height = radius * Math.sqrt(3);
+                const x = 0;
+                const y = i * height;
+                const z = 0;
+                const segment = new THREE.ConeGeometry(radius, height, 32);
+
+                const darkeningFactor = i / numSegments;
+                const coneColor = new THREE.Color(0x005500).lerp(new THREE.Color(0x00FF00), darkeningFactor);
+                const coneMaterial = new THREE.MeshStandardMaterial({color: coneColor,side:THREE.DoubleSide, roughness: 0.5, emissive: coneColor, metalness:0.4, flatShading:true});
+
+                const coneMesh  = new THREE.Mesh(segment, coneMaterial);
+                // coneMesh2.rotation.y += Math.PI / 2;
+                coneMesh.position.set(x, 0.6*y, z);
+                // coneMesh2.position.set(x, 0.6*y, z);
+                coneMesh.castShadow=true;
+                coneMesh.receiveShadow=true
+                this.group.add(coneMesh);
+                // this.group.add(coneMesh2)
+                baseSize = baseSize * 0.9
+            }
+        }
+
+        createTrunk(baseSize){
+            var trunkGeometry = new THREE.CylinderGeometry(baseSize / 6, baseSize / 6, baseSize / 2, 7);
+
+            var trunkMaterial =  new THREE.MeshStandardMaterial({color: 0x6F4E37,side:THREE.DoubleSide, roughness: 0.5, metalness:0.4, flatShading:true});
+            
+            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+            trunk.position.y -= 3
+            trunk.castShadow=true;
+            trunk.receiveShadow=true;
+            this.group.add(trunk);
+        }
+
+        rotate(x=0, y=0, z=0){
+            this.group.rotation.x += x;
+            this.group.rotation.y += y;
+            this.group.rotation.z += z;
+            
+        }
+
+        animate(ratio){
+            this.group.rotation.y += 1 * ratio;
+            if (Math.abs(this.group.rotation.z) > Math.PI / 18){
+                this.zSign *= -1;
+            } 
+            this.group.rotation.z += 1 * ratio * this.zSign;
+            if (Math.abs(this.group.rotation.x) > Math.PI / 18){
+                this.xSign *= -1;
+            } 
+            this.group.rotation.x += 1 * ratio * this.xSign;
+            this.group.position.y += 4 * ratio * this.up;
+            this.group.position.x += 4 * ratio * this.up;
+            if (this.group.position.y > 10 || this.group.position.y < 3){
+                this.up *= -1;
+            } 
+        }
+
+
+        setPosition(x=0, y=0, z=0){
+            this.group.position.set(x, y, z);
+        }
+        }
+
+    
+        var stats = initStats();
+
+
+        var scene = new THREE.Scene();
+
+        var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+		
+
+        var renderer = new THREE.WebGLRenderer();
+
+        renderer.setClearColor(new THREE.Color(0x969696));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;  
+		renderer.autoClear = true;          
+		renderer.autoClearColor = true;     
+		
+		ctr = new THREE.OrbitControls( camera, renderer.domElement);
+
+        var planeGeometry = new THREE.PlaneGeometry(60, 40, 60, 40);
+        var planeMaterial = new THREE.MeshLambertMaterial({color: 0xffffff, side:THREE.DoubleSide});
+        var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.receiveShadow = true;
+
+        plane.rotation.x = -0.5 * Math.PI;
+        plane.position.x = 15
+        plane.position.y = 0
+        plane.position.z = 0
+
+        scene.add(plane);
+
+        var cubeGeometry = new THREE.CubeGeometry(4, 4, 4);
+        var cubeMaterial = new THREE.MeshPhongMaterial({color: 0xff0000, specular:0x049ef4, shininess: 100});
+        var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+        cube.castShadow = true;
+
+        cube.position.x = -4;
+        cube.position.y = 3;
+        cube.position.z = 0;
+        cube.receiveShadow=true
+
+        scene.add(cube);
+
+        var sphereGeometry = new THREE.SphereGeometry(4, 20, 20);
+        var sphereMaterial = new THREE.MeshPhongMaterial({color: 0x42f2f5, specular:0xff4800, shininess: 90});
+        var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+
+        sphere.position.x = 20;
+        sphere.position.y = 0;
+        sphere.position.z = 2;
+        sphere.castShadow = true;
+
+        scene.add(sphere);
+
+        var homeGroup = new THREE.Group();
+        const homeGeometry = new THREE.BoxGeometry(8, 8, 8);
+        const homeMaterial = new THREE.MeshPhongMaterial({color: 0xf7d472, specular:0xffffff, shininess: 30, reflectivity: 1});
+        const home = new THREE.Mesh(homeGeometry, homeMaterial);
+        home.receiveShadow=true;
+        home.castShadow=true;
+    
+
+        const roofGeometry = new THREE.ConeGeometry(8, 5, 4, 1);
+        const roofMaterial = new THREE.MeshPhongMaterial({color: 0xe338f2, specular:0xff0000, shininess: 30, reflectivity: 1});
+        const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+        roof.position.y += 6;
+        roof.rotation.y += Math.PI / 4
+        roof.receiveShadow=true;
+        roof.castShadow=true;
+
+        const pointLight = new THREE.PointLight( 0x38f56b, 0.9, 30 );
+        pointLight.position.set( -9, 6, 4);
+        pointLight.castShadow = true;
+
+        const sphereSize = 1;
+        const pointLightHelper = new THREE.PointLightHelper( pointLight, sphereSize );
+
+        homeGroup.add(pointLight);
+        homeGroup.add(home);
+        homeGroup.add(roof);
+
+        scene.add(homeGroup);
+        homeGroup.position.set(9, 4, -9);
+
+        const tree = new ConeTree(5, 5);
+        tree.setPosition(10, 4, 10)
+        scene.add(tree.group);
+
+
+        var spotLightTree = new THREE.SpotLight(0xff7070);
+        spotLightTree.castShadow = true;
+		  
+		spotLightTree.angle = 0.3;
+		spotLightTree.penumbra = .7;
+		var helperTree = new THREE.CameraHelper( spotLightTree.shadow.camera );
+		spotLightTree.shadow.camera.near = 0.1;
+		spotLightTree.shadow.camera.far = 100;
+		spotLightTree.shadow.camera.fov = 60;
+		spotLightTree.shadow.mapSize.width = 2048;
+		spotLightTree.shadow.mapSize.height = 2048;
+        spotLightTree.target = tree.group;
+
+
+        var coneGeometry = new THREE.ConeGeometry(22, 100, 32, 32);
+        var coneMaterial = new THREE.MeshLambertMaterial( { opacity:0.1, color: 0xff7070,transparent:true } );
+        var dustGlowTree = new THREE.Mesh(coneGeometry, coneMaterial);
+        dustGlowTree.rotation.x -= Math.PI/2
+    
+
+        var groupTree = new THREE.Group();
+        
+        groupTree.position.set(-30, 20, -5);
+        groupTree.add(dustGlowTree);    
+        groupTree.add(spotLightTree);
+
+        dustGlowTree.position.y -= 0
+        dustGlowTree.position.z += 40
+
+        scene.add(groupTree);
+
+
+        const geometry = new THREE.TorusKnotGeometry( 2, 0.4, 100, 16, 4, 7); 
+        const material = new THREE.MeshPhongMaterial({color: 0x3d29d8, specular:0xff0000, shininess: 30, reflectivity: 1}); 
+        const torusKnot = new THREE.Mesh( geometry, material ); scene.add( torusKnot );
+        torusKnot.receiveShadow=true;
+        torusKnot.castShadow=true;
+
+
+        torusKnot.position.set(5, 5, 6)
+
+   
+
+
+        camera.position.x = -25;
+        camera.position.y = 30;
+        camera.position.z = 25;
+        camera.lookAt(new THREE.Vector3(10, 0, 0));
+
+        var ambiColor = "#51bbb4";
+        var ambientLight = new THREE.AmbientLight(ambiColor);
+        scene.add(ambientLight);
+        ambientLight.intensity = 0.5
+        var spotLight = new THREE.SpotLight(0xffffff);
+        spotLight.castShadow = true;
+		  
+		spotLight.angle = 0.3;
+		spotLight.penumbra = .7;
+		var helper = new THREE.CameraHelper( spotLight.shadow.camera );
+		spotLight.shadow.camera.near = 0.1;
+		spotLight.shadow.camera.far = 100;
+		spotLight.shadow.camera.fov = 60;
+		spotLight.shadow.mapSize.width = 2048;
+		spotLight.shadow.mapSize.height = 2048;
+
+        
+		
+        var coneGeometry = new THREE.ConeGeometry(22, 100, 32, 32);
+        var coneMaterial = new THREE.MeshLambertMaterial( { opacity:0.1, color: 0xFFD700,transparent:true } );
+        var dustGlow = new THREE.Mesh(coneGeometry, coneMaterial);
+        dustGlow.rotation.x -= Math.PI/2
+    
+
+        var group = new THREE.Group();
+        
+        group.position.set(60, 30, 0);
+        group.add(dustGlow);    
+        group.add(spotLight);
+        dustGlow.position.y -= 0
+        dustGlow.position.z += 40
+
+        scene.add(group);
+        $("#WebGL-output").append(renderer.domElement);
+        var step = 0;
+
+        var controls = new function () {
+            this.rotationSpeed = 0.02;
+            this.bouncingSpeed = 0.03;
+            this.ambientColor = ambiColor;
+        }
+
+        var gui = new dat.GUI();
+        gui.addColor(controls, 'ambientColor').onChange(function (e) {
+            ambientLight.color = new THREE.Color(e);
+        });
+
+
+        render();
+
+        function render() {
+            stats.update();
+            cube.rotation.x += controls.rotationSpeed;
+            cube.rotation.y += controls.rotationSpeed;
+            cube.rotation.z += controls.rotationSpeed;
+
+            step += controls.bouncingSpeed;
+            sphere.position.x = 20 + ( 10 * (Math.cos(step)));
+            sphere.position.y = 2 + ( 10 * Math.abs(Math.sin(step)));
+
+            const angle = Date.now() * 0.0005;
+            const x = 30 + 30 * Math.cos(angle);
+            const z = 30 * Math.sin(angle);
+            const y = Math.abs(30 * Math.sin(angle));
+
+            group.position.x = x;
+            group.position.z = z;
+
+            tree.animate(0.01);
+
+            torusKnot.rotation.x += controls.rotationSpeed/2;
+            torusKnot.rotation.y += controls.rotationSpeed/2;
+            torusKnot.rotation.z += controls.rotationSpeed/2;
+
+            homeGroup.rotation.y += controls.rotationSpeed *1.5;
+
+            groupTree.lookAt(tree.group.position);
+            groupTree.position.z = x-10;
+            groupTree.position.y = y+10;
+
+            group.lookAt(sphere.position);
+            spotLight.target = sphere;
+            requestAnimationFrame(render);
+            renderer.render(scene, camera);
+        }
+
+        function initStats() {
+
+            var stats = new Stats();
+
+            stats.setMode(0);
+            stats.domElement.style.position = 'absolute';
+            stats.domElement.style.left = '0px';
+            stats.domElement.style.top = '0px';
+
+            $("#Stats-output").append(stats.domElement);
+
+            return stats;
+        }
+  
+
+
+</script>
+</body>
+</html>

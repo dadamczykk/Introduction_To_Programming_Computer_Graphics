@@ -1,0 +1,1 @@
+Folder textures powinien być w tym samym katalogu co plik html z zadaniem

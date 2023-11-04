@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<title>Adamczyk Dominik Zad 3</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link rel=stylesheet href="css/base.css"/>
+</head>
+<body>
+
+<script src="three.js"></script>
+<script src="ParametricGeometries.js"></script>
+<script src="CurveExtras.js"></script>
+<script src="Detector.js"></script>
+<script src="stats.js"></script>
+<script src="OrbitControls.js"></script>
+<script src="THREEx.KeyboardState.js"></script>
+<script src="THREEx.FullScreen.js"></script>
+<script src="THREEx.WindowResize.js"></script>
+
+
+<div id="ThreeJS" style="position: absolute; left:0px; top:0px"></div>
+<script>
+
+
+var container, scene, camera, renderer, controls, stats;
+var keyboard = new THREEx.KeyboardState();
+var clock = new THREE.Clock();
+
+class ConeTree {
+
+constructor(numSegments, baseSize) {
+	this.group = new THREE.Group();
+	this.zSign = 1;
+	this.xSign = 1;
+	this.up = 1;
+	this.side = 1;
+	this.createFoliage(numSegments, baseSize);
+	this.createTrunk(baseSize);
+	
+}
+
+createFoliage(numSegments, baseSize) {
+	
+	for (let i = 0; i < numSegments; i++) {
+		const radius = baseSize / 2 
+		const height = radius * Math.sqrt(3);
+		const x = 0;
+		const y = i * height;
+		const z = 0;
+		const segment = new THREE.ConeGeometry(radius, height, 64);
+
+		const darkeningFactor = i / numSegments;
+		const coneColor = new THREE.Color(0x005500).lerp(new THREE.Color(0x00FF00), darkeningFactor);
+		var leaves = new THREE.TextureLoader().load( 'textures/ex/leaves.jpg' );
+		var leavesNormal = new THREE.TextureLoader().load( 'textures/ex/leaves_normal.png' );
+		const coneMaterial = new THREE.MeshStandardMaterial({map:leaves ,side:THREE.DoubleSide, roughness: 0.9, metalness:0.9, opacity:0.7, transparent:true, shininess:0.9, normalMap: leavesNormal});
+
+		const coneMesh  = new THREE.Mesh(segment, coneMaterial);
+		// coneMesh2.rotation.y += Math.PI / 2;
+		coneMesh.position.set(x, 0.6*y, z);
+		// coneMesh2.position.set(x, 0.6*y, z);
+		coneMesh.castShadow=true;
+		coneMesh.receiveShadow=true
+		this.group.add(coneMesh);
+		// this.group.add(coneMesh2)
+		baseSize = baseSize * 0.9
+	}
+}
+
+createTrunk(baseSize){
+	var trunkGeometry = new THREE.CylinderGeometry(baseSize / 6, baseSize / 6, baseSize / 2, 7);
+
+	var trunkMaterial =  new THREE.MeshStandardMaterial({color: 0x6F4E37,side:THREE.DoubleSide, roughness: 0.5, metalness:0.4, flatShading:true});
+	
+	const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+	trunk.position.y -= 90
+	trunk.castShadow=true;
+	trunk.receiveShadow=true;
+	this.group.add(trunk);
+}
+
+rotate(x=0, y=0, z=0){
+	this.group.rotation.x += x;
+	this.group.rotation.y += y;
+	this.group.rotation.z += z;
+	
+}
+
+animate(ratio){
+	this.group.rotation.y += 1 * ratio;
+	if (Math.abs(this.group.rotation.z) > Math.PI / 18){
+		this.zSign *= -1;
+	} 
+	this.group.rotation.z += 1 * ratio * this.zSign;
+	if (Math.abs(this.group.rotation.x) > Math.PI / 18){
+		this.xSign *= -1;
+	} 
+	this.group.rotation.x += 1 * ratio * this.xSign;
+	this.group.position.y += 4 * ratio * this.up;
+	this.group.position.x += 4 * ratio * this.up;
+	if (this.group.position.y > 10 || this.group.position.y < 3){
+		this.up *= -1;
+	} 
+}
+
+
+setPosition(x=0, y=0, z=0){
+	this.group.position.set(x, y, z);
+}
+}
+
+
+
+var mirrorCube, mirrorCubeCamera;
+var mirrorSphere, mirrorSphereCamera;
+var mirrorSphere2, mirrorSphereCamera2;
+var pumpkin, mySphere;
+var angle = 0;
+radius = 400;
+var tree;
+
+init();
+animate();
+
+// FUNCTIONS 		
+function init() 
+{
+	scene = new THREE.Scene();
+
+	var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
+	var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 20000;
+	camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+	scene.add(camera);
+	camera.position.set(0,150,400);
+	camera.lookAt(scene.position);	
+
+	if ( Detector.webgl )
+		renderer = new THREE.WebGLRenderer( {antialias:true} );
+	else
+		renderer = new THREE.CanvasRenderer(); 
+	renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+	container = document.getElementById( 'ThreeJS' );
+	container.appendChild( renderer.domElement );
+
+	THREEx.WindowResize(renderer, camera);
+	THREEx.FullScreen.bindKey({ charCode : 'm'.charCodeAt(0) });
+
+	controls = new THREE.OrbitControls( camera, renderer.domElement );
+
+	stats = new Stats();
+	stats.domElement.style.position = 'absolute';
+	stats.domElement.style.bottom = '0px';
+	stats.domElement.style.zIndex = 100;
+	container.appendChild( stats.domElement );
+
+	var light = new THREE.PointLight(0xffffff);
+	light.position.set(0,250,0);
+	scene.add(light);
+
+	var floorTexture = new THREE.TextureLoader().load( 'textures/ex/cobble.jpg' );
+	floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping; 
+	floorTexture.repeat.set( 5, 5 );
+	var floorMaterial = new THREE.MeshStandardMaterial( { map: floorTexture, side:THREE.BackSide } );
+	// floorMaterial.normalMap = new THREE.TextureLoader().load( 'textures/ex/cobble_normal.jpg' );
+	floorMaterial.displacementMap = new THREE.TextureLoader().load( 'textures/ex/cobble_displacement.png' );
+	floorMaterial.displacementScale = 100;
+
+	var floorGeometry = new THREE.PlaneGeometry(1000, 1000, 10, 10);
+	var floor = new THREE.Mesh(floorGeometry, floorMaterial);
+	floor.position.y = -0.5;
+	floor.rotation.x = Math.PI / 2;
+	scene.add(floor);
+	
+
+	var materialArray = [];
+	materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/ex/forrest/right.png'  ) }));
+	materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/ex/forrest/left.png'   ) }));
+	materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/ex/forrest/top.png'    ) }));
+	materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/ex/forrest/bottom.png' ) }));
+	materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/ex/forrest/front.png'  ) }));
+	materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/ex/forrest/back.png'   ) }));
+	for (var i = 0; i < 6; i++)
+	   materialArray[i].side = THREE.BackSide;
+	var skyboxMaterial = new THREE.MeshFaceMaterial( materialArray );
+	var skyboxGeom = new THREE.BoxGeometry( 5000, 5000, 5000, 64, 64, 64 );
+	var skybox = new THREE.Mesh( skyboxGeom, skyboxMaterial );
+	scene.add( skybox );	
+	
+	
+		
+	var cubeGeom = new THREE.CubeGeometry(200, 200, 30,100,100,100);
+	mirrorCubeCamera = new THREE.CubeCamera( 159, 5000, 512 );
+
+	scene.add( mirrorCubeCamera );
+	var mirrorCubeMaterial = new THREE.MeshBasicMaterial( { envMap: mirrorCubeCamera.renderTarget } );
+	mirrorCube = new THREE.Mesh( cubeGeom, mirrorCubeMaterial );
+	mirrorCube.position.set(-75,50,0);
+
+	mirrorCubeCamera.position.set(-75,50,0);
+	scene.add(mirrorCube);	
+	
+	var sphereGeom =  new THREE.SphereGeometry( 50, 32, 16 );
+	mirrorSphereCamera = new THREE.CubeCamera( 0.1, 5000, 512 );
+
+	scene.add( mirrorSphereCamera );
+	var mirrorSphereMaterial = new THREE.MeshBasicMaterial( { envMap: mirrorSphereCamera.renderTarget } );
+	mirrorSphere = new THREE.Mesh( sphereGeom, mirrorSphereMaterial );
+	mirrorSphere.position.set(75,50,0);
+
+	mirrorSphereCamera.position.set(75,50,0);
+	scene.add(mirrorSphere);
+
+	const pumpkinGeometry = new THREE.BoxGeometry(130, 130, 130);
+
+	
+	pumpkinMaterialArray = [];
+	pumpkinMaterialArray.push(new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/ex/pumpkin_face.jpg') }));
+	pumpkinMaterialArray.push(new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/ex/pumpkin_face.jpg' ) }));
+	pumpkinMaterialArray.push(new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/ex/pumpkin_top.jpg' ) }));
+	pumpkinMaterialArray.push(new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/ex/pumpkin_side.png' ) }));
+	pumpkinMaterialArray.push(new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/ex/pumpkin_side.png' ) }));
+	pumpkinMaterialArray.push(new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/ex/pumpkin_side.png' ) }));
+	for (var i = 0; i < 6; i++)
+		pumpkinMaterialArray[i].normalMap = new THREE.TextureLoader().load( 'textures/ex/normalmap.jpg' );
+		// pumpkinMaterialArray[i].shininess = 100;
+
+	
+	pumpkin = new THREE.Mesh(pumpkinGeometry, pumpkinMaterialArray);
+	pumpkin.position.set(-200,130,200)
+	scene.add(pumpkin);
+
+	var Mylight = new THREE.PointLight(0xffffff);
+	Mylight.position.set(-350,10,350);
+	scene.add(Mylight);
+
+	var Mylight2 = new THREE.PointLight(0xffffff);
+	Mylight2.position.set(550, 300, -300);
+	scene.add(Mylight2);
+
+	var sphereGeom2 =  new THREE.SphereGeometry( 85, 32, 16 );
+	mirrorSphereCamera2 = new THREE.CubeCamera( 0.1, 5000, 512 );
+
+	scene.add( mirrorSphereCamera2 );
+	var mirrorSphereMaterial2 = new THREE.MeshBasicMaterial( { envMap: mirrorSphereCamera2.renderTarget } );
+	mirrorSphere2 = new THREE.Mesh( sphereGeom2, mirrorSphereMaterial2 );
+	mirrorSphere2.position.set(-350,50,350);
+
+	mirrorSphereCamera2.position.set(-350,50,350);
+	scene.add(mirrorSphere2);
+
+	tree= new ConeTree(5, 150)
+	scene.add(tree.group)
+
+	tree.setPosition(350, 100, -200)
+
+
+}
+
+function animate() 
+{
+    requestAnimationFrame( animate );
+	
+	angle += 0.02;
+	mirrorSphere2.position.x = radius * Math.cos(angle) -100;
+	mirrorSphere2.position.z = radius * Math.sin(angle) + 100;
+	mirrorSphereCamera2.position.x = radius * Math.cos(angle) - 100;
+	mirrorSphereCamera2.position.z = radius * Math.sin(angle)+ 100;
+	render();		
+	update();
+
+
+	tree.animate(0.01);
+	pumpkin.rotation.x += 0.01;
+	pumpkin.rotation.y += 0.01;
+
+	// cube.position.x = radius * Math.cos(angle);
+	// cube.position.z = radius * Math.sin(angle);
+	
+}
+
+function update()
+{
+	if ( keyboard.pressed("z") ) 
+	{ 
+		// do something
+	}
+	
+	controls.update();
+	stats.update();
+}
+
+function render() 
+{
+	mirrorCube.visible = false;
+	mirrorCubeCamera.updateCubeMap( renderer, scene );
+	mirrorCube.visible = true;
+
+	mirrorSphere.visible = false;
+	mirrorSphereCamera.updateCubeMap( renderer, scene );
+	mirrorSphere.visible = true;
+
+	mirrorSphere2.visible = false;
+	mirrorSphereCamera2.updateCubeMap( renderer, scene );
+	mirrorSphere2.visible = true;
+
+	
+
+	
+	renderer.render( scene, camera );
+}
+
+</script>
+
+</body>
+</html>
